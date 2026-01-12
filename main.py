@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-print("------------ [1] 파이썬 스크립트 시작 ------------")
-
 import requests
 import base64
 import urllib3
 from google import genai
-import random
 import time
-
-print("------------ [2] 라이브러리 로드 완료 ------------")
 
 # SSL 경고 무시
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -20,26 +15,46 @@ WP_USER = os.environ.get("WP_USER")
 WP_APP_PASS = os.environ.get("WP_APP_PASS")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# 모델 설정 (Gemini 2.5 Flash - 안전성 최우선)
+# 모델 설정 (가성비 최강 2.5 Flash)
 MODEL_NAME = "gemini-2.5-flash"
+client = genai.Client(api_key=GEMINI_API_KEY)
 
-def get_tech_topic():
-    topics = [
-        "차세대 반도체 패키징 기술", "자율주행 LiDAR 센서 기술",
-        "스마트홈 Matter 표준 분석", "국방용 드론 제어 기술",
-        "전고체 배터리 상용화 난제", "Edge AI와 임베디드 비전",
-        "6G 통신과 테라헤르츠 기술", "금속 3D 프린팅 산업 적용",
-        "전기차 BMS 핵심 알고리즘", "양자 암호 통신 기술"
-    ]
-    return random.choice(topics)
+def get_viral_topic():
+    """
+    Gemini에게 '오늘 사람들이 클릭할 만한 대중적인 주제'를 물어봅니다.
+    """
+    print("🕵️‍♀️ Gemini가 실시간 트렌드 주제를 탐색 중...")
+    try:
+        prompt = """
+        당신은 100만 유튜버이자 트렌드 분석가입니다.
+        오늘 블로그에 올리면 조회수가 폭발할 만한 '대중적인 호기심 주제' 하나만 추천해주세요.
+        
+        [주제 선정 조건]
+        1. 분야: IT 기술, 미래 사회, 생활 꿀팁, 미스터리 과학 중 하나.
+        2. 난이도: 초등학생도 이해할 수 있는 쉬운 주제.
+        3. 흥미: "어? 진짜?" 소리가 나오는 호기심 자극 소재.
+        4. 안전: 정치/종교/비방/혐오/성적 내용은 절대 금지.
+        
+        대답은 군더더기 없이 '주제' 딱 한 문장만 출력하세요.
+        예시: 스마트폰 배터리를 2배 오래 쓰는 숨겨진 설정
+        """
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt
+        )
+        topic = response.text.strip()
+        # 혹시 모를 따옴표 제
+        return topic.replace('"', '').replace("'", "")
+    except Exception as e:
+        print(f"❌ 주제 선정 실패: {e}")
+        return "인공지능이 인간을 대체할 수 없는 3가지 이유" # 비상용 기본 주제
 
 def upload_image_to_wp(image_url, title):
-    print(f"📥 이미지 다운로드 시도... ({image_url})")
+    print(f"📥 썸네일 다운로드 중... ({image_url})")
     try:
         image_data = requests.get(image_url).content
-        filename = f"tech_{int(time.time())}.png"
+        filename = f"viral_{int(time.time())}.png"
         
-        # 인증 정보 인코딩
         credentials = f"{WP_USER}:{WP_APP_PASS}"
         token = base64.b64encode(credentials.encode()).decode()
         headers = {
@@ -52,37 +67,41 @@ def upload_image_to_wp(image_url, title):
         response = requests.post(media_url, headers=headers, data=image_data, verify=False)
 
         if response.status_code == 201:
-            print("✅ 이미지 업로드 성공!")
+            print("✅ 썸네일 업로드 성공!")
             return response.json()['id']
         else:
-            print(f"❌ 이미지 업로드 실패: {response.text}")
+            print(f"❌ 썸네일 업로드 실패: {response.text}")
             return None
     except Exception as e:
         print(f"❌ 이미지 처리 중 에러: {e}")
         return None
 
 def auto_posting():
-    print("------------ [3] 자동 포스팅 함수 시작 ------------")
+    print("------------ [트렌드 헌터 봇 가동] ------------")
     
-    topic = get_tech_topic()
-    print(f"🚀 주제 선정: {topic}")
-    print(f"🧠 모델 사용: {MODEL_NAME}")
+    # 1. 핫한 주제 선정
+    topic = get_viral_topic()
+    print(f"🔥 오늘의 핫 토픽: {topic}")
 
-    # Gemini 클라이언트 연결
-    try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
-    except Exception as e:
-        print(f"❌ API 키 오류: {e}")
-        return
-
-    # 글쓰기 요청
-    print("✍️ Gemini에게 글쓰기 요청 중...")
+    # 2. 글쓰기 요청 (조회수 중심)
+    print("✍️ 인기 작가가 글을 작성하는 중...")
+    
     prompt = f"""
-    전문 엔지니어로서 '{topic}'에 대한 기술 블로그를 작성하세요.
-    - 대상: 엔지니어
-    - 구성: 서론, 기술적 특징(3가지), 결론
-    - 분량: 2000자 이상
-    - 형식: HTML 태그(<h2>, <p>, <ul>) 사용
+    당신은 월 방문자 100만 명의 인기 테크/생활 블로거입니다.
+    주제: '{topic}'에 대해 독자의 이목을 집중시키는 글을 작성하세요.
+
+    [작성 법칙: 3초 안에 사로잡아라]
+    1. 제목: 클릭을 부르는 어그로성 제목 (하지만 내용은 진실되게). 물음표나 느낌표 활용.
+       (예: 지금 당장 설정을 끄지 않으면 후회하는 이유?)
+    2. 어조: 옆집 형/오빠가 알려주듯 친근하고 재미있게. (~해요, ~거든요, 대박이죠?)
+    3. 구성:
+       - **충격적인 도입부**: 독자의 공감을 사거나 궁금증 유발.
+       - **본문 (팩트 체크)**: 쉽고 명쾌한 설명 (어려운 용어 금지).
+       - **반전/결론**: 실생활에 도움 되는 꿀팁으로 마무리.
+    4. 안전 수칙 (절대 준수):
+       - 특정 인물, 기업, 단체를 비방하거나 깎아내리지 말 것.
+       - 혐오 표현이나 사회적 갈등을 조장하지 말 것.
+    5. 형식: HTML 태그(<h2>, <p>, <ul>, <strong>)를 써서 모바일에서 보기 편하게.
     """
 
     try:
@@ -91,26 +110,31 @@ def auto_posting():
             contents=prompt
         )
         content = response.text
-        title = topic # 제목 단순화 (오류 방지)
         
-        # 제목 추출 시도
-        first_line = content.split('\n')[0]
-        if len(first_line) < 50 and "<h1>" not in first_line:
-            title = first_line.replace("#", "").strip()
+        # 제목 추출 로직
+        title = topic
+        lines = content.split('\n')
+        if "제목:" in lines[0] or "# " in lines[0]:
+            title = lines[0].replace("제목:", "").replace("#", "").strip()
+            content = "\n".join(lines[1:])
+        elif len(lines[0]) < 100:
+             title = lines[0].strip()
+             content = "\n".join(lines[1:])
 
     except Exception as e:
         print(f"❌ 글쓰기 실패: {e}")
         return
 
-    # 이미지 생성
-    print("🎨 이미지 생성 요청 중 (Pollinations)...")
-    image_prompt = f"futuristic technology {topic}, unreal engine render"
+    # 3. 이미지 생성 (눈에 띄는 스타일)
+    print("🎨 썸네일 생성 중...")
+    # 프롬프트: 사이버펑크보다는 좀 더 밝고 팝아트적인 느낌으로 변경
+    image_prompt = f"pop art style, vivid colors, interesting illustration about {topic}, 4k, trending on artstation"
     image_url = f"https://image.pollinations.ai/prompt/{image_prompt}?width=1024&height=600&nologo=true&seed={int(time.time())}"
     
     featured_media_id = upload_image_to_wp(image_url, topic)
 
-    # 워드프레스 발행
-    print("📤 워드프레스로 전송 중...")
+    # 4. 워드프레스 발행
+    print("📤 블로그 발행 중...")
     credentials = f"{WP_USER}:{WP_APP_PASS}"
     token = base64.b64encode(credentials.encode()).decode()
     headers = {
@@ -131,9 +155,9 @@ def auto_posting():
     response = requests.post(WP_URL, headers=headers, json=post_data, verify=False)
     
     if response.status_code == 201:
-        print(f"🎉 성공! 글이 발행되었습니다. ID: {response.json()['id']}")
+        print(f"🎉 대박 예감! 포스팅 발행 완료. ID: {response.json()['id']}")
     else:
         print(f"❌ 발행 실패: {response.text}")
 
-# [중요] 조건문 없이 바로 실행 (들여쓰기 없음)
+# 무조건 실행
 auto_posting()
