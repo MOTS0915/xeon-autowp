@@ -85,4 +85,65 @@ def auto_posting():
        - **시장 전망 (Market Outlook)**: 향후 5년 내 변화 예측
        - **결론 (Conclusion)**: 엔지니어로서의 인사이트 요약
     4. 포맷: HTML 태그(<h2>, <h3>, <p>, <ul>, <li>, <strong>, <blockquote>)를 적절히 사용하여 가독성 최적화.
-    5. 분량: 3000자 내
+    5. 분량: 3000자 내외로 아주 상세하게 작성할 것.
+    """
+
+    try:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt
+        )
+        content = response.text
+        
+        # 제목 및 본문 분리
+        title = topic
+        lines = content.split('\n')
+        # 첫 줄에 제목이 있을 경우 추출
+        if "제목:" in lines[0] or "# " in lines[0]:
+            title = lines[0].replace("제목:", "").replace("#", "").strip()
+            content = "\n".join(lines[1:])
+        elif len(lines[0]) < 100 and len(lines[0]) > 5:
+             title = lines[0].strip()
+             content = "\n".join(lines[1:])
+
+    except Exception as e:
+        print(f"❌ 글쓰기 실패 (API 에러): {e}")
+        return
+
+    # 2. 고품질 이미지 생성 (Pollinations 활용)
+    print("🎨 주제에 맞는 테크니컬 일러스트 생성 중...")
+    # 프롬프트 강화: 4K, 언리얼 엔진 렌더링 스타일
+    image_prompt = f"hyper-realistic futuristic technology {topic}, unreal engine 5 render, 8k resolution, cinematic lighting, cyberpunk atmosphere, highly detailed circuits and machinery"
+    image_url = f"https://image.pollinations.ai/prompt/{image_prompt}?width=1200&height=630&nologo=true&seed={int(time.time())}"
+    
+    featured_media_id = upload_image_to_wp(image_url, topic)
+
+    # 3. 워드프레스 발행
+    credentials = f"{WP_USER}:{WP_APP_PASS}"
+    token = base64.b64encode(credentials.encode()).decode()
+    headers = {
+        "Authorization": f"Basic {token}",
+        "Content-Type": "application/json"
+    }
+    
+    post_data = {
+        "title": title,
+        "content": content,
+        "status": "publish",
+        "categories": [1], 
+    }
+    
+    if featured_media_id:
+        post_data["featured_media"] = featured_media_id
+
+    print("📤 워드프레스로 발행 요청 중...")
+    response = requests.post(WP_URL, headers=headers, json=post_data, verify=False)
+    
+    if response.status_code == 201:
+        print(f"✅ 포스팅 발행 성공! [ID: {response.json()['id']}]")
+        print("🎉 축하합니다! 블로그 봇이 완벽하게 작동했습니다.")
+    else:
+        print(f"❌ 발행 실패: {response.text}")
+
+if __name__ == "__main__":
+    auto_posting()
