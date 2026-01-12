@@ -15,8 +15,9 @@ WP_USER = os.environ.get("WP_USER")
 WP_APP_PASS = os.environ.get("WP_APP_PASS")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# 🏆 [핵심] 로그에서 찾은 '최고 성능' 모델 적용
-# Flash(속도) 대신 Pro(지능) 모델을 사용하여 글의 깊이를 높였습니다.
+# 🏆 [핵심 설청]
+# Pro 모델은 무료 한도가 적어 429 에러가 발생하므로,
+# 성능 좋고 한도가 널널한 'Flash' 모델로 확정했습니다.
 client = genai.Client(api_key=GEMINI_API_KEY)
 MODEL_NAME = "gemini-2.5-flash" 
 
@@ -37,10 +38,10 @@ def get_tech_topic():
     return random.choice(topics)
 
 def upload_image_to_wp(image_url, title):
-    print(f"📥 고해상도 이미지 다운로드 중... ({image_url})")
+    print(f"📥 이미지 다운로드 중... ({image_url})")
     try:
         image_data = requests.get(image_url).content
-        filename = f"tech_pro_{int(time.time())}.png"
+        filename = f"tech_{int(time.time())}.png"
 
         credentials = f"{WP_USER}:{WP_APP_PASS}"
         token = base64.b64encode(credentials.encode()).decode()
@@ -64,28 +65,26 @@ def upload_image_to_wp(image_url, title):
         return None
 
 def auto_posting():
-    topic = get_tech_topic()
-    print(f"🚀 오늘의 주제: {topic}")
-    print(f"🧠 두뇌 가동: {MODEL_NAME} (최고 성능 모델)")
+    print("==========================================")
+    print("🚀 자동화 봇 시스템 가동 시작")
+    print("==========================================")
 
-    # 1. Gemini 3 Pro에게 글쓰기 요청
-    print("✍️ 수석 엔지니어가 글을 작성하고 있습니다... (시간이 좀 걸립니다)")
+    topic = get_tech_topic()
+    print(f"📌 오늘의 주제: {topic}")
+    print(f"🧠 사용하는 모델: {MODEL_NAME}")
+
+    # 1. Gemini에게 글쓰기 요청
+    print("✍️ Gemini가 글을 작성하고 있습니다...")
     
     prompt = f"""
-    당신은 20년 경력의 글로벌 IT 기업 수석 엔지니어(Principal Engineer)입니다.
-    주제: '{topic}'에 대해 심도 있는 기술 분석 블로그 포스팅을 작성하세요.
+    당신은 20년 경력의 글로벌 IT 기업 수석 엔지니어입니다.
+    주제: '{topic}'에 대해 전문적인 기술 리뷰 블로그 포스팅을 작성하세요.
 
     [작성 지침]
-    1. 제목: 클릭을 유도하되 기술적 전문성이 느껴지도록 작성 (예: '...의 현주소와 미래 전망').
-    2. 독자 타겟: 현직 엔지니어 및 공학 전공자.
-    3. 구성:
-       - **서론 (Introduction)**: 기술의 배경과 중요성
-       - **핵심 기술 분석 (Core Technology)**: 3가지 주요 기술적 특징을 상세히 서술
-       - **기술적 과제 및 해결 방안 (Challenges & Solutions)**: 현재의 한계점과 극복 방안
-       - **시장 전망 (Market Outlook)**: 향후 5년 내 변화 예측
-       - **결론 (Conclusion)**: 엔지니어로서의 인사이트 요약
-    4. 포맷: HTML 태그(<h2>, <h3>, <p>, <ul>, <li>, <strong>, <blockquote>)를 적절히 사용하여 가독성 최적화.
-    5. 분량: 3000자 내외로 아주 상세하게 작성할 것.
+    1. 제목: 기술적 전문성이 느껴지도록 작성.
+    2. 내용 구성: 서론, 핵심 기술 분석(3가지), 과제 및 해결 방안, 결론.
+    3. 포맷: HTML 태그(<h2>, <h3>, <p>, <ul>, <li>, <strong>) 사용.
+    4. 분량: 2500자 내외로 상세하게.
     """
 
     try:
@@ -98,7 +97,6 @@ def auto_posting():
         # 제목 및 본문 분리
         title = topic
         lines = content.split('\n')
-        # 첫 줄에 제목이 있을 경우 추출
         if "제목:" in lines[0] or "# " in lines[0]:
             title = lines[0].replace("제목:", "").replace("#", "").strip()
             content = "\n".join(lines[1:])
@@ -110,11 +108,10 @@ def auto_posting():
         print(f"❌ 글쓰기 실패 (API 에러): {e}")
         return
 
-    # 2. 고품질 이미지 생성 (Pollinations 활용)
-    print("🎨 주제에 맞는 테크니컬 일러스트 생성 중...")
-    # 프롬프트 강화: 4K, 언리얼 엔진 렌더링 스타일
-    image_prompt = f"hyper-realistic futuristic technology {topic}, unreal engine 5 render, 8k resolution, cinematic lighting, cyberpunk atmosphere, highly detailed circuits and machinery"
-    image_url = f"https://image.pollinations.ai/prompt/{image_prompt}?width=1200&height=630&nologo=true&seed={int(time.time())}"
+    # 2. 이미지 생성
+    print("🎨 테크니컬 일러스트 생성 중...")
+    image_prompt = f"futuristic technology {topic}, unreal engine 5 render, 8k resolution, cinematic lighting"
+    image_url = f"https://image.pollinations.ai/prompt/{image_prompt}?width=1024&height=600&nologo=true&seed={int(time.time())}"
     
     featured_media_id = upload_image_to_wp(image_url, topic)
 
@@ -138,12 +135,3 @@ def auto_posting():
 
     print("📤 워드프레스로 발행 요청 중...")
     response = requests.post(WP_URL, headers=headers, json=post_data, verify=False)
-    
-    if response.status_code == 201:
-        print(f"✅ 포스팅 발행 성공! [ID: {response.json()['id']}]")
-        print("🎉 축하합니다! 블로그 봇이 완벽하게 작동했습니다.")
-    else:
-        print(f"❌ 발행 실패: {response.text}")
-
-if __name__ == "__main__":
-    auto_posting()
