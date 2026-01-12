@@ -18,7 +18,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # 1. 신형 엔진 구동 (Google GenAI Client)
 # 모델 변경하고 싶으면 'gemini-2.0-flash' 부분을 수정하면 됩니다.
 client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_NAME = "gemini-3.0-flash" 
+MODEL_NAME = "gemini-3-flash" 
 
 def get_tech_topic():
     topics = [
