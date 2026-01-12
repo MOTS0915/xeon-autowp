@@ -18,7 +18,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # 🏆 [핵심] 로그에서 찾은 '최고 성능' 모델 적용
 # Flash(속도) 대신 Pro(지능) 모델을 사용하여 글의 깊이를 높였습니다.
 client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_NAME = "gemini-3-pro-preview" 
+MODEL_NAME = "gemini-2.5-flash" 
 
 def get_tech_topic():
     # 엔지니어링 관련 심층 주제 리스트
