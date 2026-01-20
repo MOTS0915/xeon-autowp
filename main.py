@@ -19,8 +19,8 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # 🚀 모델 설정 (안정성 위주)
-# 1순위: 2.0 Lite (가볍고 빠름), 2순위: 1.5 Flash (안정적), 3순위: 2.5 (최신)
-MODELS_TO_TRY = ["gemini-2.0-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"]
+
+MODELS_TO_TRY = ["gemini-flash-latest", "gemini-2.5-flash","gemini-2.0-flash-lite"]
 
 def generate_content_with_retry(prompt):
     """
