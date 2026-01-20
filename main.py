@@ -19,8 +19,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # 🚀 모델 설정 (안정성 위주)
-
-MODELS_TO_TRY = ["gemini-flash-latest", "gemini-2.5-flash","gemini-2.0-flash-lite"]
+MODELS_TO_TRY = ["gemini-2.0-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"]
 
 def generate_content_with_retry(prompt):
     """
@@ -48,7 +47,6 @@ def get_recent_posts():
     """
     print("📚 기존에 작성한 글 목록을 조회합니다...")
     try:
-        # 최근 10개 글만 가져옴
         response = requests.get(WP_URL, params={'per_page': 10}, verify=False)
         if response.status_code == 200:
             posts = response.json()
@@ -65,7 +63,6 @@ def get_recent_posts():
 def get_search_friendly_topic(existing_titles):
     print("🕵️‍♀️ 사람들이 검색할 만한 핫 토픽 찾는 중...")
     
-    # 이미 쓴 글 목록을 텍스트로 변환
     exclude_list = ", ".join(existing_titles)
     
     try:
@@ -88,7 +85,29 @@ def get_search_friendly_topic(existing_titles):
         return topic
     except Exception as e:
         print(f"❌ 주제 선정 실패: {e}")
-        return "스마트폰 저장공간 확보하는 확실한 방법" # 비상용 주제
+        return "스마트폰 저장공간 확보하는 확실한 방법"
+
+# 🆕 [신규 함수] AI가 이미지 프롬프트를 직접 작성
+def get_dynamic_image_prompt(topic):
+    print("🎨 주제에 맞는 독창적인 이미지 아이디어를 구상 중...")
+    try:
+        prompt = f"""
+        당신은 세계적인 사진작가이자 아트 디렉터입니다.
+        블로그 주제 '{topic}'을 가장 매력적으로 표현할 수 있는 '사진 촬영 지시문(Prompt)'을 영어로 작성해주세요.
+
+        [요구사항]
+        1. 단순한 사물 나열이 아닌, '구체적인 상황'과 '분위기'를 묘사하세요.
+        2. 스타일: 고품질의 전문적인 사진 (cinematic photo, editorial shot, candid photography 등 다양한 스타일 적용).
+        3. 조명과 구도를 명시하세요 (e.g., natural morning light, shallow depth of field).
+        4. 출력: 영어 문장 하나만 딱 출력하세요.
+        예시: A candid photograph of someone holding a smartphone with a cracked screen, natural sunlight, shallow depth of field, urban street background.
+        """
+        image_prompt = generate_content_with_retry(prompt).strip().replace('"', '').replace("'", "")
+        print(f"✨ 생성된 이미지 프롬프트: {image_prompt}")
+        return image_prompt
+    except Exception as e:
+        print(f"⚠️ 프롬프트 생성 실패, 기본값 사용: {e}")
+        return f"high quality photography related to {topic}, cinematic lighting"
 
 def upload_image_to_wp(image_url, title):
     print(f"📥 이미지 다운로드 중... ({image_url})")
@@ -117,14 +136,14 @@ def upload_image_to_wp(image_url, title):
         return None
 
 def auto_posting():
-    print("------------ [플럭시 블로그 봇 V3.0 (중복 방지 & 인간미 탑재)] ------------")
+    print("------------ [플럭시 블로그 봇 V4.0 (이미지 다양성 강화)] ------------")
     
     # 1. 기존 글 확인 및 주제 선정
     recent_titles = get_recent_posts()
     topic = get_search_friendly_topic(recent_titles)
     print(f"🔥 확정된 주제: {topic}")
 
-    # 2. 글쓰기 (플럭시 페르소나 강화)
+    # 2. 글쓰기 (플럭시 페르소나)
     print("✍️ '플럭시'가 글을 작성하고 있습니다...")
     
     prompt = f"""
@@ -132,15 +151,13 @@ def auto_posting():
     주제: '{topic}'에 대해 블로그 글을 쓰세요.
 
     [⚠️ 절대 금지 (AI 티 내지 않기)]
-    - "안녕하세요 플럭시입니다" 처럼 기계적인 인사 금지.
-    - "본론으로 들어가겠습니다", "결론적으로" 같은 딱딱한 접속사 금지.
-    - 문장 끝마다 이모티콘 붙이지 말 것. (문단 당 1~2개만 사용).
-    - "전반적으로", "살펴보겠습니다" 같은 번역투 금지.
+    - 기계적인 인사, 딱딱한 접속사 금지.
+    - 이모티콘 남발 금지 (문단 당 1~2개).
 
     [😊 페르소나 설정: 진짜 사람처럼]
-    - 시작: 친구에게 말하듯 자연스럽게 경험담으로 시작. (예: "어제 카페 갔는데...", "저도 이거 때문에 고생했거든요.")
-    - 말투: ~해요, ~하더라구요, ~거든요 (부드러운 구어체).
-    - 내용: 너무 전문적인 용어는 빼고, 초등학생도 이해하게 쉽게.
+    - 시작: 친구에게 말하듯 자연스러운 경험담으로 시작.
+    - 말투: 부드러운 구어체 (~해요, ~하더라구요).
+    - 내용: 초등학생도 이해하게 쉽게.
     - 마무리: "도움 되셨으면 좋겠네요! 다음에 또 꿀팁 가져올게요."
 
     [형식]
@@ -166,10 +183,12 @@ def auto_posting():
         print(f"❌ 글쓰기 에러: {e}")
         return
 
-    # 3. 이미지 생성 (Unsplash 스타일)
-    print("🎨 블로그용 감성 이미지 생성 중...")
-    image_prompt = f"minimalist clean photography, bright aesthetic workspace or daily life object related to {topic}, high resolution, soft lighting, instagram style"
-    image_url = f"https://image.pollinations.ai/prompt/{image_prompt}?width=1024&height=600&nologo=true&seed={int(time.time())}"
+    # 3. 이미지 생성 (AI가 직접 프롬프트 작성)
+    print("🎨 주제에 딱 맞는 유니크한 이미지 생성 중...")
+    # 1) AI에게 프롬프트를 받아옴
+    dynamic_prompt = get_dynamic_image_prompt(topic)
+    # 2) 받아온 프롬프트로 이미지 생성
+    image_url = f"https://image.pollinations.ai/prompt/{dynamic_prompt}?width=1024&height=600&nologo=true&seed={int(time.time())}"
     
     featured_media_id = upload_image_to_wp(image_url, topic)
 
