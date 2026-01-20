@@ -4,6 +4,7 @@ import requests
 import base64
 import urllib3
 from google import genai
+from google.genai import types
 import time
 import random
 
@@ -16,14 +17,34 @@ WP_USER = os.environ.get("WP_USER")
 WP_APP_PASS = os.environ.get("WP_APP_PASS")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# 모델 설정
-MODEL_NAME = "gemini-2.5-flash"
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+# 🚀 [핵심] 스마트 모델 선택기
+# 1순위: 2.5 (최신), 2순위: 1.5 (안정), 3순위: 2.0 (예비)
+MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash-lite-preview-02-05"]
+
+def generate_content_with_retry(prompt):
+    """
+    에러가 나면 다음 모델로 바꿔가며 끝까지 시도하는 좀비 함수
+    """
+    for model in MODELS_TO_TRY:
+        try:
+            print(f"📡 연결 시도 중... (Model: {model})")
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt
+            )
+            return response.text
+        except Exception as e:
+            print(f"⚠️ {model} 과부하/에러 발생: {e}")
+            print("⏳ 5초 후 다른 모델로 재시도합니다...")
+            time.sleep(5)
+            continue # 다음 모델로 넘어감
+            
+    # 모든 모델이 실패했을 경우
+    raise Exception("❌ 모든 AI 모델이 응답하지 않습니다. 구글 서버 점검 중일 수 있습니다.")
+
 def get_search_friendly_topic():
-    """
-    사람들이 검색창에 실제로 입력할 법한 '고수요 키워드' 주제를 뽑습니다.
-    """
     print("🕵️‍♀️ 사람들이 검색할 만한 핫 토픽 찾는 중...")
     try:
         prompt = """
@@ -38,11 +59,8 @@ def get_search_friendly_topic():
         
         군더더기 없이 '주제'만 딱 출력하세요.
         """
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt
-        )
-        topic = response.text.strip().replace('"', '').replace("'", "")
+        # 여기서 좀비 함수 호출
+        topic = generate_content_with_retry(prompt).strip().replace('"', '').replace("'", "")
         return topic
     except Exception as e:
         print(f"❌ 주제 선정 실패: {e}")
@@ -76,7 +94,7 @@ def upload_image_to_wp(image_url, title):
         return None
 
 def auto_posting():
-    print("------------ [플럭시 블로그 봇 가동] ------------")
+    print("------------ [플럭시 블로그 봇 V2.1 (서버 우회 기능 탑재)] ------------")
     
     # 1. 주제 선정
     topic = get_search_friendly_topic()
@@ -107,11 +125,8 @@ def auto_posting():
     """
 
     try:
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt
-        )
-        content = response.text
+        # 여기서도 좀비 함수 호출 (에러나면 다른 모델이 대신 씀)
+        content = generate_content_with_retry(prompt)
         
         # 제목 추출
         title = topic
@@ -125,13 +140,11 @@ def auto_posting():
              content = "\n".join(lines[1:])
 
     except Exception as e:
-        print(f"❌ 글쓰기 에러: {e}")
+        print(f"❌ 글쓰기 에러 (최종 실패): {e}")
         return
 
-    # 3. 이미지 생성 (대중적이고 깔끔한 스타일)
+    # 3. 이미지 생성
     print("🎨 블로그용 대표 이미지 생성 중...")
-    # 프롬프트 수정: 밝고, 깨끗하고, 감성적인 'Unsplash' 스타일의 고화질 사진
-    # 주제에 따라 현대적인 데스크 셋업이나 추상적인 표현 사용
     image_prompt = f"high quality photography, realistic, bright and airy, minimalist, modern desk setup or abstract representation of {topic}, professional stock photo style, 4k, soft lighting"
     image_url = f"https://image.pollinations.ai/prompt/{image_prompt}?width=1024&height=600&nologo=true&seed={int(time.time())}"
     
@@ -163,5 +176,5 @@ def auto_posting():
     else:
         print(f"❌ 발행 실패: {response.text}")
 
-# 실행
-auto_posting()
+if __name__ == "__main__":
+    auto_posting()
