@@ -4,7 +4,6 @@ import requests
 import base64
 import urllib3
 from google import genai
-from google.genai import types
 import time
 import random
 
@@ -19,9 +18,9 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# 🚀 [핵심] 스마트 모델 선택기
-# 1순위: 2.5 (최신), 2순위: 1.5 (안정), 3순위: 2.0 (예비)
-MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-flash-latest"]
+# 🚀 모델 설정 (안정성 위주)
+# 1순위: 2.0 Lite (가볍고 빠름), 2순위: 1.5 Flash (안정적), 3순위: 2.5 (최신)
+MODELS_TO_TRY = ["gemini-2.0-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"]
 
 def generate_content_with_retry(prompt):
     """
@@ -36,35 +35,60 @@ def generate_content_with_retry(prompt):
             )
             return response.text
         except Exception as e:
-            print(f"⚠️ {model} 과부하/에러 발생: {e}")
-            print("⏳ 5초 후 다른 모델로 재시도합니다...")
-            time.sleep(5)
-            continue # 다음 모델로 넘어감
+            print(f"⚠️ {model} 에러 발생: {e}")
+            print("⏳ 3초 후 다른 모델로 재시도합니다...")
+            time.sleep(3)
+            continue
             
-    # 모든 모델이 실패했을 경우
-    raise Exception("❌ 모든 AI 모델이 응답하지 않습니다. 구글 서버 점검 중일 수 있습니다.")
+    raise Exception("❌ 모든 AI 모델이 응답하지 않습니다.")
 
-def get_search_friendly_topic():
-    print("🕵️‍♀️ 사람들이 검색할 만한 핫 토픽 찾는 중...")
+def get_recent_posts():
+    """
+    워드프레스에서 최근 작성한 글들의 제목을 가져옵니다. (중복 방지용)
+    """
+    print("📚 기존에 작성한 글 목록을 조회합니다...")
     try:
-        prompt = """
-        당신은 SEO(검색 최적화) 전문가이자 베테랑 블로거입니다.
-        현재 시점에서 대중들이 가장 궁금해하고 검색량이 많을 법한 '생활 밀착형 정보' 또는 'IT/테크 꿀팁' 주제를 하나만 추천하세요.
+        # 최근 10개 글만 가져옴
+        response = requests.get(WP_URL, params={'per_page': 10}, verify=False)
+        if response.status_code == 200:
+            posts = response.json()
+            titles = [post['title']['rendered'] for post in posts]
+            print(f"✅ 최근 글 {len(titles)}개를 확인했습니다.")
+            return titles
+        else:
+            print("⚠️ 글 목록 조회 실패 (무시하고 진행)")
+            return []
+    except Exception as e:
+        print(f"⚠️ 글 목록 조회 중 에러: {e}")
+        return []
+
+def get_search_friendly_topic(existing_titles):
+    print("🕵️‍♀️ 사람들이 검색할 만한 핫 토픽 찾는 중...")
+    
+    # 이미 쓴 글 목록을 텍스트로 변환
+    exclude_list = ", ".join(existing_titles)
+    
+    try:
+        prompt = f"""
+        당신은 트렌드 분석가이자 베테랑 블로거입니다.
+        대중들이 궁금해할 만한 '생활/IT 꿀팁' 주제를 하나만 추천하세요.
         
         [필수 조건]
-        1. 타겟: 20대~40대 일반인 (어려운 전문 용어 금지).
-        2. 분야: 스마트폰 숨은 기능, 넷플릭스/유튜브 꿀팁, 최신 AI 활용법, 생활 속 과학 원리 중 택 1.
-        3. 형식: 검색어 형태로 간결하게. (예: 아이폰 배터리 성능 100% 유지하는 법)
-        4. 안전: 정치/종교/비방/성적 내용 절대 금지.
+        1. 타겟: 2040 일반인 (쉬운 내용).
+        2. 분야: 스마트폰/PC 꿀팁, 최신 앱 활용법, 생활 속 과학/상식.
+        3. 형식: 검색어 형태 (예: 배터리 수명 늘리는 법).
         
-        군더더기 없이 '주제'만 딱 출력하세요.
+        [⛔ 제외할 주제 (절대 중복 금지)]
+        이미 다음 주제들은 작성했습니다. 이와 비슷하거나 겹치는 내용은 절대 추천하지 마세요:
+        {exclude_list}
+        
+        새롭고 신선한 주제 딱 한 줄만 출력하세요.
         """
-        # 여기서 좀비 함수 호출
         topic = generate_content_with_retry(prompt).strip().replace('"', '').replace("'", "")
         return topic
     except Exception as e:
         print(f"❌ 주제 선정 실패: {e}")
-        return "스마트폰 속도가 느려질 때 해결하는 3가지 방법" # 비상용 주제
+        return "스마트폰 저장공간 확보하는 확실한 방법" # 비상용 주제
 
 def upload_image_to_wp(image_url, title):
     print(f"📥 이미지 다운로드 중... ({image_url})")
@@ -87,46 +111,44 @@ def upload_image_to_wp(image_url, title):
             print("✅ 미디어 업로드 성공!")
             return response.json()['id']
         else:
-            print(f"❌ 미디어 업로드 실패: {response.text}")
             return None
     except Exception as e:
         print(f"❌ 이미지 처리 오류: {e}")
         return None
 
 def auto_posting():
-    print("------------ [플럭시 블로그 봇 V2.1 (서버 우회 기능 탑재)] ------------")
+    print("------------ [플럭시 블로그 봇 V3.0 (중복 방지 & 인간미 탑재)] ------------")
     
-    # 1. 주제 선정
-    topic = get_search_friendly_topic()
-    print(f"🔥 오늘의 포스팅 주제: {topic}")
+    # 1. 기존 글 확인 및 주제 선정
+    recent_titles = get_recent_posts()
+    topic = get_search_friendly_topic(recent_titles)
+    print(f"🔥 확정된 주제: {topic}")
 
-    # 2. 글쓰기 (플럭시 페르소나 적용)
+    # 2. 글쓰기 (플럭시 페르소나 강화)
     print("✍️ '플럭시'가 글을 작성하고 있습니다...")
     
     prompt = f"""
-    당신은 '플럭시(Fluxy)'라는 닉네임을 쓰는 친근한 IT/정보 블로거입니다.
-    주제: '{topic}'에 대해 블로그 포스팅을 작성하세요.
+    당신은 블로거 '플럭시(Fluxy)'입니다.
+    주제: '{topic}'에 대해 블로그 글을 쓰세요.
 
-    [페르소나: 플럭시]
-    - 말투: "안녕하세요! 플럭시입니다" 같은 기계적인 인사는 하지 마세요. 대신, 실제 사람이 겪은 경험담처럼 자연스럽게 시작하세요.
-    - 톤앤매너: 친한 친구나 동료에게 "이거 진짜 좋더라"라고 알려주는 듯한 '해요체' 사용. (이모지 적절히 섞어서)
-    - 특징: 어려운 기술 용어는 쉽게 풀어서 설명하고, 독자의 궁금증을 긁어주는 해결사 역할.
-    - 추가 특징 : 인공지능이 작성한 글임을 들키지 아니하게 매번 스스로 검증 해야함, 너무 많은 이모티콘 사용음 안됨
+    [⚠️ 절대 금지 (AI 티 내지 않기)]
+    - "안녕하세요 플럭시입니다" 처럼 기계적인 인사 금지.
+    - "본론으로 들어가겠습니다", "결론적으로" 같은 딱딱한 접속사 금지.
+    - 문장 끝마다 이모티콘 붙이지 말 것. (문단 당 1~2개만 사용).
+    - "전반적으로", "살펴보겠습니다" 같은 번역투 금지.
 
-    [글 구성]
-    1. **매력적인 제목**: 검색 클릭을 유도하는 제목 (예: ~하는 방법, ~의 진실).
-    2. **도입부**: "저도 처음엔 몰랐는데..." 처럼 공감대를 형성하며 시작.
-    3. **본문**: 정보 전달 (핵심 포인트 3가지로 요약).
-    4. **결론**: 요약 및 "다음에 더 좋은 팁으로 돌아올게요, 지금까지 플럭시였습니다!" 식의 자연스러운 마무리.
+    [😊 페르소나 설정: 진짜 사람처럼]
+    - 시작: 친구에게 말하듯 자연스럽게 경험담으로 시작. (예: "어제 카페 갔는데...", "저도 이거 때문에 고생했거든요.")
+    - 말투: ~해요, ~하더라구요, ~거든요 (부드러운 구어체).
+    - 내용: 너무 전문적인 용어는 빼고, 초등학생도 이해하게 쉽게.
+    - 마무리: "도움 되셨으면 좋겠네요! 다음에 또 꿀팁 가져올게요."
 
     [형식]
-    - HTML 태그 사용 (<h2>, <p>, <ul>, <li>, <b> 등).
-    - 가독성을 위해 문단은 짧게 끊을 것.
-    - 비방, 혐오 표현 절대 금지.
+    - HTML 태그 사용 (<h2>, <p>, <ul>, <li>, <b>).
+    - 가독성을 위해 문단은 2~3줄로 짧게 끊을 것.
     """
 
     try:
-        # 여기서도 좀비 함수 호출 (에러나면 다른 모델이 대신 씀)
         content = generate_content_with_retry(prompt)
         
         # 제목 추출
@@ -141,12 +163,12 @@ def auto_posting():
              content = "\n".join(lines[1:])
 
     except Exception as e:
-        print(f"❌ 글쓰기 에러 (최종 실패): {e}")
+        print(f"❌ 글쓰기 에러: {e}")
         return
 
-    # 3. 이미지 생성
-    print("🎨 블로그용 대표 이미지 생성 중...")
-    image_prompt = f"high quality photography, realistic, bright and airy, minimalist, modern desk setup or abstract representation of {topic}, professional stock photo style, 4k, soft lighting"
+    # 3. 이미지 생성 (Unsplash 스타일)
+    print("🎨 블로그용 감성 이미지 생성 중...")
+    image_prompt = f"minimalist clean photography, bright aesthetic workspace or daily life object related to {topic}, high resolution, soft lighting, instagram style"
     image_url = f"https://image.pollinations.ai/prompt/{image_prompt}?width=1024&height=600&nologo=true&seed={int(time.time())}"
     
     featured_media_id = upload_image_to_wp(image_url, topic)
