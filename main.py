@@ -21,7 +21,7 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 # 🚀 [핵심] 스마트 모델 선택기
 # 1순위: 2.5 (최신), 2순위: 1.5 (안정), 3순위: 2.0 (예비)
-MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash-lite-preview-02-05"]
+MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-flash-latest"]
 
 def generate_content_with_retry(prompt):
     """
