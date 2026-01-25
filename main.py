@@ -3,6 +3,7 @@ import os
 import requests
 import base64
 import urllib3
+import urllib.parse  # 💡 [추가] URL 인코딩을 위한 필수 모듈
 from google import genai
 import time
 import random
@@ -18,13 +19,10 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# 🚀 모델 설정 (안정성 위주)
-MODELS_TO_TRY = ["gemini-2.0-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"]
+# 🚀 모델 설정
+MODELS_TO_TRY = ["gemini-flash-latest", "gemini-2.5-flash","gemini-2.0-flash-lite"]
 
 def generate_content_with_retry(prompt):
-    """
-    에러가 나면 다음 모델로 바꿔가며 끝까지 시도하는 좀비 함수
-    """
     for model in MODELS_TO_TRY:
         try:
             print(f"📡 연결 시도 중... (Model: {model})")
@@ -42,9 +40,6 @@ def generate_content_with_retry(prompt):
     raise Exception("❌ 모든 AI 모델이 응답하지 않습니다.")
 
 def get_recent_posts():
-    """
-    워드프레스에서 최근 작성한 글들의 제목을 가져옵니다. (중복 방지용)
-    """
     print("📚 기존에 작성한 글 목록을 조회합니다...")
     try:
         response = requests.get(WP_URL, params={'per_page': 10}, verify=False)
@@ -74,7 +69,6 @@ def get_search_friendly_topic(existing_titles):
         1. 타겟: 2040 일반인 (쉬운 내용).
         2. 분야: 경제 및 금융 뉴스, 주식 추천 및 분석
         
-        
         [⛔ 제외할 주제 (절대 중복 금지)]
         이미 다음 주제들은 작성했습니다. 이와 비슷하거나 겹치는 내용은 절대 추천하지 마세요:
         {exclude_list}
@@ -91,23 +85,17 @@ def get_search_friendly_topic(existing_titles):
 def get_dynamic_image_prompt(topic):
     print("🎨 주제에 맞는 독창적인 이미지 아이디어를 구상 중...")
     try:
-        prompt = f"""
-        당신은 세계적인 사진작가이자 아트 디렉터입니다.
-        블로그 주제 '{topic}'을 가장 매력적으로 표현할 수 있는 '사진 촬영 지시문(Prompt)'을 영어로 작성해주세요.
-
-        [요구사항]
-        1. 단순한 사물 나열이 아닌, '구체적인 상황'과 '분위기'를 묘사하세요.
-        2. 스타일: 고품질의 전문적인 사진 (cinematic photo, editorial shot, candid photography 등 다양한 스타일 적용).
-        3. 조명과 구도를 명시하세요 (e.g., natural morning light, shallow depth of field).
-        4. 출력: 영어 문장 하나만 딱 출력하세요.
-        예시: A candid photograph of someone holding a smartphone with a cracked screen, natural sunlight, shallow depth of field, urban street background.
-        """
+        # 선생님께서 수정하신 프롬프트 내용 유지
         prompt_1 = f"""
             당신은 웹 이미지 검색기 입니다. 블로그 주제 '{topic}'과 가장 적합한 이미지를 그리는 프롬프트를 영문으로 작성해주세요
             내부에는 주제와 관련된 글이 있어도 되며 이는 한글이어야 합니다.
-        
         """
+        # prompt_1을 사용하여 생성 요청
         image_prompt = generate_content_with_retry(prompt_1).strip().replace('"', '').replace("'", "")
+        
+        # 💡 [안전장치] 만약 AI가 너무 길게 답하면 URL이 깨질 수 있으므로 첫 줄만 가져오거나 줄바꿈 제거
+        image_prompt = image_prompt.replace("\n", " ") 
+        
         print(f"✨ 생성된 이미지 프롬프트: {image_prompt}")
         return image_prompt
     except Exception as e:
@@ -135,13 +123,14 @@ def upload_image_to_wp(image_url, title):
             print("✅ 미디어 업로드 성공!")
             return response.json()['id']
         else:
+            print(f"❌ 미디어 업로드 실패: {response.status_code}") # 에러 코드 출력 추가
             return None
     except Exception as e:
         print(f"❌ 이미지 처리 오류: {e}")
         return None
 
 def auto_posting():
-    print("------------ [플럭시 블로그 봇 V4.0 (이미지 다양성 강화)] ------------")
+    print("------------ [플럭시 블로그 봇 V4.1 (URL 인코딩 패치)] ------------")
     
     # 1. 기존 글 확인 및 주제 선정
     recent_titles = get_recent_posts()
@@ -162,12 +151,12 @@ def auto_posting():
     [😊 페르소나 설정: 진짜 사람처럼]
     - 시작: 친구에게 말하듯 자연스러운 설명담으로 시작.
     - 말투: 부드러운 구어체 (~합니다).
-    - 내용: 고등학생도 이해하게 쉽게.
+    - 내용: 고등학생도 이해하게 쉽게. 다만 매우 분석적으로 오늘 날짜를 바탕으로 최신 뉴스또는 현황을 기반으로 분석
     - 마무리: "도움 되셨으면 좋겠네요! 다음에도 좋은 내용 가져올게요."
 
     [형식]
     - HTML 태그 사용 (<h2>, <p>, <ul>, <li>, <b>).
-    - 가독성을 위해 문단은 2~3줄로 짧게 끊을 것.
+    - 가독성을 위해 문단은 3~4줄로 짧게 끊을 것.
     """
 
     try:
@@ -190,10 +179,15 @@ def auto_posting():
 
     # 3. 이미지 생성 (AI가 직접 프롬프트 작성)
     print("🎨 주제에 딱 맞는 유니크한 이미지 생성 중...")
+    
     # 1) AI에게 프롬프트를 받아옴
     dynamic_prompt = get_dynamic_image_prompt(topic)
-    # 2) 받아온 프롬프트로 이미지 생성
-    image_url = f"https://image.pollinations.ai/prompt/{dynamic_prompt}?width=1024&height=600&nologo=true&seed={int(time.time())}"
+    
+    # 2) 💡 [핵심 수정] 프롬프트를 URL 인코딩하여 깨짐 방지
+    encoded_prompt = urllib.parse.quote(dynamic_prompt)
+    
+    # 3) 인코딩된 프롬프트로 이미지 생성 URL 완성
+    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=600&nologo=true&seed={int(time.time())}"
     
     featured_media_id = upload_image_to_wp(image_url, topic)
 
