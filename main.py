@@ -102,7 +102,12 @@ def get_dynamic_image_prompt(topic):
         4. 출력: 영어 문장 하나만 딱 출력하세요.
         예시: A candid photograph of someone holding a smartphone with a cracked screen, natural sunlight, shallow depth of field, urban street background.
         """
-        image_prompt = generate_content_with_retry(prompt).strip().replace('"', '').replace("'", "")
+        prompt_1 = f"""
+            당신은 웹 이미지 검색기 입니다. 블로그 주제 '{topic}'과 가장 적합한 이미지를 그리는 프롬프트를 영문으로 작성해주세요
+            내부에는 주제와 관련된 글이 있어도 되며 이는 한글이어야 합니다.
+        
+        """
+        image_prompt = generate_content_with_retry(prompt_1).strip().replace('"', '').replace("'", "")
         print(f"✨ 생성된 이미지 프롬프트: {image_prompt}")
         return image_prompt
     except Exception as e:
