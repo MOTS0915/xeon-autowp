@@ -304,67 +304,147 @@ def extract_title_from_outline(outline):
 
 def get_dynamic_image_prompt(topic, content_summary):
     """🆕 개선: 글 내용을 반영한 이미지 프롬프트 생성"""
-    print("🎨 글 내용에 최적화된 이미지 컨셉 구상 중...")
+    print("🎨 주제에 딱 맞는 이미지 컨셉 구상 중...")
     try:
         prompt = f"""
-당신은 비주얼 디렉터입니다.
+당신은 경제 블로그 전문 비주얼 디렉터입니다.
 
 **블로그 주제:** {topic}
-**글 요약:** {content_summary[:300]}
+**글 핵심 내용:** {content_summary[:400]}
 
-**미션: 위 블로그 글의 썸네일 이미지를 생성할 프롬프트를 영문으로 작성하세요**
+**미션: 위 글의 핵심을 시각적으로 표현할 썸네일 이미지 프롬프트를 작성하세요**
 
-[🎨 이미지 컨셉 가이드]
-- 경제/금융 블로그에 어울리는 전문적이면서도 친근한 느낌
-- 주제의 핵심 키워드를 시각화
-- 텍스트가 포함될 경우 반드시 한글로
-- 고퀄리티, 깔끔한 디자인
+[🎯 주제 분석 및 시각화 전략]
+1. 주제의 핵심 키워드 추출 (예: ISA → 비과세 통장 이미지, 배당주 → 배당금 흐름)
+2. 구체적인 비주얼 요소 지정 (차트, 아이콘, 심볼, 배경)
+3. 한글 텍스트는 주제의 핵심 단어만 (3~5단어)
 
-[❌ 피할 것]
-- 너무 복잡하거나 산만한 구성
-- 저작권 있는 로고나 인물
-- 클리셰적인 주식 차트만 있는 이미지
+[✅ 좋은 예시]
+- ISA 한도 상향 → "Korean text 'ISA 비과세 한도 UP', tax free savings account concept, money growing, charts showing benefits, modern financial illustration"
+- 배당주 분석 → "Korean text '배당 투자 전략', dividend stocks concept, money flow arrows, calendar showing dividend dates, professional blue theme"
+- 반도체 전망 → "Korean text '반도체 섹터', semiconductor chip illustration, technology innovation, global supply chain, futuristic design"
 
-**출력: 영문 이미지 프롬프트 (1~2문장, 한글 텍스트 포함 가능)**
+[🎨 스타일 가이드]
+- 전문적이면서 깔끔한 인포그래픽 스타일
+- 색상: 파란색/녹색 계열 (신뢰감), 주황색 포인트 (활력)
+- 레이아웃: 중앙 정렬, 여백 충분, 가독성 최우선
+- 퀄리티: "high quality, professional design, 4K"
 
-예시: "Modern financial infographic with text '2025 투자 전략', clean layout, charts and graphs, professional blue and white color scheme, high quality"
+[❌ 절대 금지]
+- 실존 인물, 기업 로고, 저작권 있는 캐릭터
+- 복잡한 주식 차트만 가득한 이미지
+- 너무 추상적이거나 주제와 무관한 이미지
+
+**출력 형식: 영문 프롬프트만 (한글 텍스트 포함, 100단어 이내)**
 """
         image_prompt = generate_content_with_retry(prompt, use_search=False).strip()
-        image_prompt = image_prompt.replace('"', '').replace("'", '').replace('\n', ' ')[:300]
         
-        print(f"✨ 이미지 프롬프트: {image_prompt}\n")
+        # 따옴표 및 불필요한 기호 제거
+        image_prompt = image_prompt.replace('"', '').replace("'", '').replace('`', '')
+        image_prompt = image_prompt.replace('\n', ' ').replace('  ', ' ')
+        
+        # 너무 길면 자르기
+        if len(image_prompt) > 400:
+            image_prompt = image_prompt[:400]
+        
+        print(f"✨ 생성된 프롬프트: {image_prompt}\n")
         return image_prompt
     except Exception as e:
         print(f"⚠️ 이미지 프롬프트 생성 실패, 기본값 사용: {e}")
-        return f"Professional blog thumbnail about {topic}, modern design, korean text, high quality"
+        # 기본값도 주제를 반영하도록
+        return f"Korean text related to {topic}, financial blog thumbnail, modern infographic style, professional design, blue and white color scheme, high quality 4K"
 
-def upload_image_to_wp(image_url, title):
-    """이미지 업로드"""
-    print(f"📥 이미지 다운로드 중... ({image_url[:80]}...)")
-    try:
-        image_data = requests.get(image_url, timeout=30).content
-        filename = f"blog_img_{int(time.time())}.png"
+def generate_image_url(prompt, service="flux-pro"):
+    """여러 이미지 생성 서비스 지원 (퀄리티 순)"""
+    encoded_prompt = urllib.parse.quote(prompt)
+    seed = int(time.time())
+    
+    services = {
+        # 최고 퀄리티 모델 우선
+        "flux-pro": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&model=flux-pro&nologo=true&seed={seed}",
+        "flux": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&model=flux&nologo=true&seed={seed}",
+        "flux-realism": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&model=flux-realism&nologo=true&seed={seed}",
+        "turbo": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&model=turbo&nologo=true&seed={seed}",
+        "pollinations": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&nologo=true&enhance=true&seed={seed}",
+    }
+    
+    return services.get(service, services["flux-pro"])
+
+def upload_image_to_wp(image_prompt, title, max_retries=3):
+    """🆕 개선: 이미지 업로드 (다중 서비스 + 재시도 로직)"""
+    print(f"🖼️ 이미지 생성 및 업로드 시작...")
+    
+    # 시도할 서비스 목록 (최고 퀄리티 순)
+    services = ["flux-pro", "flux", "flux-realism", "turbo", "pollinations"]
+    
+    for service in services:
+        print(f"🎨 {service} 모델로 이미지 생성 시도...")
         
-        credentials = f"{WP_USER}:{WP_APP_PASS}"
-        token = base64.b64encode(credentials.encode()).decode()
-        headers = {
-            "Authorization": f"Basic {token}",
-            "Content-Disposition": f"attachment; filename={filename}",
-            "Content-Type": "image/png"
-        }
-
-        media_url = WP_URL.replace("/posts", "/media")
-        response = requests.post(media_url, headers=headers, data=image_data, verify=False, timeout=30)
-
-        if response.status_code == 201:
-            print("✅ 이미지 업로드 성공!")
-            return response.json()['id']
-        else:
-            print(f"❌ 이미지 업로드 실패: {response.status_code}")
-            return None
-    except Exception as e:
-        print(f"❌ 이미지 처리 오류: {e}")
-        return None
+        for attempt in range(max_retries):
+            try:
+                # 이미지 URL 생성
+                image_url = generate_image_url(image_prompt, service)
+                print(f"📡 [{attempt+1}/{max_retries}] 다운로드 중... ({image_url[:80]}...)")
+                
+                # 이미지 다운로드 (타임아웃 30초)
+                response = requests.get(image_url, timeout=30)
+                
+                if response.status_code != 200:
+                    print(f"⚠️ 이미지 다운로드 실패 (상태코드: {response.status_code})")
+                    continue
+                
+                image_data = response.content
+                
+                # 이미지 크기 확인 (최소 10KB)
+                if len(image_data) < 10000:
+                    print(f"⚠️ 이미지 크기가 너무 작음 ({len(image_data)} bytes)")
+                    continue
+                
+                print(f"✅ 이미지 다운로드 완료 ({len(image_data)} bytes)")
+                
+                # WordPress 업로드
+                filename = f"fluxy_blog_{int(time.time())}.png"
+                credentials = f"{WP_USER}:{WP_APP_PASS}"
+                token = base64.b64encode(credentials.encode()).decode()
+                
+                headers = {
+                    "Authorization": f"Basic {token}",
+                    "Content-Disposition": f"attachment; filename={filename}",
+                    "Content-Type": "image/png"
+                }
+                
+                media_url = WP_URL.replace("/posts", "/media")
+                print(f"📤 WordPress 업로드 중... ({media_url})")
+                
+                wp_response = requests.post(
+                    media_url, 
+                    headers=headers, 
+                    data=image_data, 
+                    verify=False, 
+                    timeout=30
+                )
+                
+                if wp_response.status_code == 201:
+                    media_id = wp_response.json()['id']
+                    media_link = wp_response.json().get('source_url', '링크 없음')
+                    print(f"🎉 업로드 성공! Media ID: {media_id}")
+                    print(f"🔗 이미지 URL: {media_link}\n")
+                    return media_id
+                else:
+                    print(f"⚠️ WordPress 업로드 실패: {wp_response.status_code}")
+                    print(f"응답: {wp_response.text[:200]}")
+                    
+            except requests.Timeout:
+                print(f"⏱️ 타임아웃 발생 (시도 {attempt+1}/{max_retries})")
+                time.sleep(2)
+            except Exception as e:
+                print(f"❌ 에러 발생: {e}")
+                time.sleep(2)
+        
+        print(f"⚠️ {service} 모델 실패, 다음 모델 시도...\n")
+    
+    print("❌ 모든 이미지 모델 실패. 이미지 없이 진행합니다.")
+    return None
 
 def auto_posting():
     """메인 자동 포스팅 프로세스"""
@@ -403,13 +483,12 @@ def auto_posting():
         
         print(f"📌 최종 제목: {title}\n")
         
-        # STEP 6: 이미지 생성
+        # STEP 6: 이미지 생성 및 업로드
         content_summary = final_content[:500] if len(final_content) > 500 else final_content
         image_prompt = get_dynamic_image_prompt(topic, content_summary)
-        encoded_prompt = urllib.parse.quote(image_prompt)
         
-        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&nologo=true&seed={int(time.time())}"
-        featured_media_id = upload_image_to_wp(image_url, title)
+        # 개선된 업로드 함수 호출 (URL이 아닌 프롬프트 전달)
+        featured_media_id = upload_image_to_wp(image_prompt, title)
         time.sleep(1)
         
         # STEP 7: 워드프레스 발행
@@ -452,5 +531,32 @@ def auto_posting():
         import traceback
         traceback.print_exc()
 
+def test_image_generation(topic="2026년 ISA 한도 상향 투자 전략"):
+    """🧪 이미지 생성 테스트 전용 함수"""
+    print("=" * 70)
+    print("🧪 이미지 생성 테스트 모드")
+    print("=" * 70)
+    print()
+    
+    # 샘플 콘텐츠
+    sample_content = f"{topic}에 대한 블로그 글입니다. 비과세 혜택과 배당 투자 전략을 다룹니다."
+    
+    # 이미지 프롬프트 생성
+    image_prompt = get_dynamic_image_prompt(topic, sample_content)
+    
+    # 이미지 업로드 테스트
+    media_id = upload_image_to_wp(image_prompt, topic)
+    
+    if media_id:
+        print(f"\n✅ 테스트 성공! Media ID: {media_id}")
+        print("WordPress 미디어 라이브러리에서 확인하세요.")
+    else:
+        print("\n❌ 테스트 실패. 위 로그를 확인하세요.")
+
 if __name__ == "__main__":
-    auto_posting()
+    # 테스트 모드 실행: python script.py test
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
+        test_image_generation()
+    else:
+        auto_posting()
