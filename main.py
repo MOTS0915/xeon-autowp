@@ -211,40 +211,78 @@ def write_full_content(topic, outline, research_data):
 
 ---
 
-**미션: 위 아웃라인과 자료를 바탕으로 완성도 높은 블로그 글을 작성하세요**
+**미션: 위 아웃라인과 자료를 바탕으로 블로그 글을 작성하세요**
 
-[😊 플럭시 페르소나]
-- 말투: 친근한 구어체 (~해요, ~이에요, ~니다 혼용)
-- 시작: 공감 가는 질문이나 최근 이슈로 자연스럽게 시작
-- 설명: 고등학생도 이해할 수 있게, 어려운 용어는 쉽게 풀어쓰기
-- 데이터: 구체적인 숫자, 날짜, 사례를 반드시 포함
-- 마무리: "이 글이 도움이 되셨길 바랍니다. 다음에 또 유익한 정보로 찾아올게요!"
+[📝 플럭시의 글쓰기 스타일 - 반드시 준수할 것]
 
-[⚠️ 절대 금지]
-- AI 티 나는 딱딱한 문체
-- 이모티콘 남발 (문단당 0~1개만)
-- "안녕하세요 여러분" 같은 진부한 인사
-- 추상적이고 뻔한 조언
-- 출처 없는 통계나 수치
+**구조:**
+- 도입부: 독자에게 질문 던지기 → 왜 지금 이 주제가 중요한지 → 본론 예고
+- 본문: ## 제목으로 3~4개 섹션 구분 (명확한 번호와 제목)
+- 각 섹션: 핵심 주제 설명 → 구체적 숫자/데이터 → 실전 예시
+- 마무리: 핵심 요약 + 독자 행동 유도 + 따뜻한 응원
 
-[📝 형식 규칙]
-- HTML 태그 사용: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>
-- 문단은 3~5줄로 짧게 (가독성)
-- 중요한 숫자나 용어는 <strong> 처리
-- 리스트는 <ul>/<li> 활용
+**말투 (매우 중요!):**
+- 존댓말 ~합니다/~입니다 위주
+- 가끔 ~이에요/~거든요/~거죠 섞어서 자연스럽게
+- "아직도 ~하시나요?" "~해 보세요" 같은 독자 참여형 문장
+- 질문 하나 → 바로 답 제시하는 구조 자주 활용
+- **절대 금지: "블로그 콘텐츠 품질 검수 전문가", "요청하신", "개선한 최종 버전" 같은 AI/드래프트 느낌 문구**
 
-[📊 필수 포함 요소]
-1. 최신 데이터나 통계 (날짜 명시)
-2. 실제 사례 또는 예시
-3. 독자가 바로 실행할 수 있는 구체적 팁
-4. 섹션별 명확한 소제목 (<h2>, <h3>)
+**데이터 제시 방식:**
+- "약 XX억 원", "XX% 상승", "XX배 증가" 등 구체적 숫자 필수
+- 날짜는 정확하게: "2026년 2월", "올해 상반기" 등
+- 비교 자주 사용: "작년 대비", "이전과 달리", "과거 XX했지만 이제는 YY"
 
-**출력 형식: 제목 없이 본문만 (HTML 형식)**
+**문단 구성:**
+- 한 문단 = 3~5줄 (너무 길면 X)
+- 중요 문장은 **볼드** 처리
+- 리스트는 "* " 불릿 포인트로만 (번호 1. 2. 3. 사용 금지)
+
+**예시 (기존 글 톤):**
+"아직도 ISA 계좌를 '연 2,000만 원짜리'라고 생각하시나요? **2026년부터는 완전히 다른 판이 열립니다.** 그동안 한도가 작아 아쉬웠던 분들이라면 오늘 포스팅을 꼭 끝까지 읽어주세요."
+
+[✅ 필수 포함 요소]
+1. 도입부 첫 문장은 반드시 질문이나 공감형으로
+2. 최소 3개 이상의 구체적 숫자/통계 포함
+3. 섹션마다 1~2개 실전 예시 (가상 시나리오 OK)
+4. 마무리는 3줄 체크리스트나 행동 유도 문장
+5. 마지막은 "이 글이 도움이 되셨길 바랍니다. 다음에 또 유익한 정보로 찾아올게요!"
+
+[❌ 절대 금지]
+- "블로그 콘텐츠 품질 검수", "요청하신", "개선했습니다" 등 메타 언급
+- "안녕하세요 여러분", "오늘은 ~에 대해 알아보겠습니다" 같은 진부한 시작
+- 이모티콘 (📈💡 같은 것) - 텍스트로만 작성
+- 너무 딱딱하거나 학술적인 문체
+- 추상적 조언 ("열심히 해보세요" 같은 것)
+
+**HTML 형식:**
+- 대제목: <h2>섹션 제목</h2>
+- 중제목: <h3>하위 제목</h3>
+- 본문: <p>문단 내용</p>
+- 리스트: <ul><li>항목</li></ul>
+- 강조: <strong>강조 텍스트</strong>
+
+**출력: 제목 없이 본문만 HTML 형식으로**
+(html 코드블록 마크다운 없이 순수 HTML만 출력)
 """
         content = generate_content_with_retry(prompt, use_search=False)
         
         # HTML 코드블록 제거
         content = content.replace('```html', '').replace('```', '').strip()
+        
+        # 메타 언급 제거 (혹시 모를 실수 방지)
+        meta_phrases = [
+            "블로그 콘텐츠 품질 검수",
+            "요청하신 원고",
+            "개선한 최종 버전",
+            "검토하고",
+            "재구성했습니다"
+        ]
+        for phrase in meta_phrases:
+            if phrase in content:
+                # 해당 문단 전체 제거
+                lines = content.split('\n')
+                content = '\n'.join([line for line in lines if phrase not in line])
         
         print("✅ 본문 작성 완료!\n")
         return content
@@ -258,7 +296,7 @@ def quality_check_and_improve(topic, content):
     
     try:
         prompt = f"""
-당신은 블로그 콘텐츠 품질 검수 전문가입니다.
+당신은 블로그 에디터입니다.
 
 **주제:** {topic}
 
@@ -267,25 +305,50 @@ def quality_check_and_improve(topic, content):
 
 ---
 
-**미션: 위 글을 검토하고 개선점을 찾아 최종 버전을 출력하세요**
+**미션: 위 글에서 문제점을 찾아 개선하되, 절대 '드래프트' 느낌이 나지 않도록 하세요**
 
-[🔍 검사 항목]
-1. 가독성: 문단이 너무 길지 않은가?
-2. 구체성: 추상적 표현 대신 구체적 예시/숫자가 있는가?
-3. 실용성: 독자가 실제로 활용할 만한 정보인가?
-4. 자연스러움: AI가 쓴 티가 나지 않는가?
-5. HTML 구조: 태그가 올바르게 사용되었는가?
+[🔍 필수 검사 항목]
+1. **메타 언급 완전 제거:** "블로그 콘텐츠", "요청하신", "검토", "개선", "재구성" 같은 단어가 하나라도 있으면 해당 문장 전체 삭제
+2. **AI 티 제거:** "~하고자 합니다", "살펴보겠습니다" 같은 딱딱한 표현을 "~해요", "~볼까요?" 등으로 변경
+3. **구체성 확인:** 모든 주장에 숫자나 구체적 예시가 있는지 확인
+4. **문단 길이:** 6줄 이상 문단은 2개로 분리
+5. **자연스러운 흐름:** 섹션 간 연결이 부드러운지 확인
 
-[✏️ 개선 방향]
-- 너무 긴 문장은 짧게 쪼개기
-- 애매한 표현은 명확하게 수정
-- 부족한 부분에 구체적 예시 추가
-- 불필요한 반복 제거
+[✅ 개선 방향]
+- 진부한 인사말 제거 ("안녕하세요", "오늘은 ~에 대해")
+- 질문형 문장 → 바로 답 주는 구조로
+- 추상적 표현 → 구체적 예시로 교체
+- 너무 긴 문장 → 2개로 분리
 
-**출력: 개선된 최종 본문 (HTML 형식, 제목 제외)**
+[❌ 절대 금지]
+- "개선했습니다", "수정했습니다" 같은 메타 설명 추가
+- 원문에 없던 새로운 섹션 추가
+- 스타일을 완전히 바꾸기 (기존 톤 유지)
+
+**출력: 개선된 본문만 (HTML 형식, 제목 제외, 메타 설명 절대 금지)**
 """
         improved_content = generate_content_with_retry(prompt, use_search=False)
         improved_content = improved_content.replace('```html', '').replace('```', '').strip()
+        
+        # 2차 필터링: 혹시 모를 메타 언급 강제 제거
+        meta_kill_list = [
+            "블로그 콘텐츠 품질 검수",
+            "요청하신 원고",
+            "개선한 최종 버전",
+            "검토하고",
+            "재구성했습니다",
+            "수정했습니다",
+            "다듬고",
+            "품질을 극대화",
+            "에디터로서",
+            "검수 전문가"
+        ]
+        
+        for meta_phrase in meta_kill_list:
+            if meta_phrase in improved_content:
+                # 해당 문구가 포함된 문단 전체 제거
+                paras = improved_content.split('</p>')
+                improved_content = '</p>'.join([p for p in paras if meta_phrase not in p])
         
         print("✅ 품질 개선 완료!\n")
         return improved_content
@@ -354,96 +417,189 @@ def get_dynamic_image_prompt(topic, content_summary):
         # 기본값도 주제를 반영하도록
         return f"Korean text related to {topic}, financial blog thumbnail, modern infographic style, professional design, blue and white color scheme, high quality 4K"
 
-def generate_image_url(prompt, service="flux-pro"):
-    """여러 이미지 생성 서비스 지원 (퀄리티 순)"""
+def generate_image_url(prompt, service="replicate"):
+    """여러 이미지 생성 서비스 지원 (안정성 순)"""
     encoded_prompt = urllib.parse.quote(prompt)
-    seed = int(time.time())
+    seed = random.randint(1000, 999999)
+    timestamp = int(time.time())
+    
+    # 한글 텍스트 추출 (있으면)
+    korean_text = ""
+    if "Korean text" in prompt:
+        # 'Korean text' 뒤의 단어들 추출
+        parts = prompt.split("Korean text")[1].split(",")[0].strip()
+        korean_text = parts.replace("'", "").replace('"', '').strip()
     
     services = {
-        # 최고 퀄리티 모델 우선
-        "flux-pro": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&model=flux-pro&nologo=true&seed={seed}",
-        "flux": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&model=flux&nologo=true&seed={seed}",
-        "flux-realism": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&model=flux-realism&nologo=true&seed={seed}",
-        "turbo": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&model=turbo&nologo=true&seed={seed}",
-        "pollinations": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&nologo=true&enhance=true&seed={seed}",
+        # 안정적인 서비스 우선
+        "replicate": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&nologo=true&private=true&seed={seed}",
+        "pollinations-simple": f"https://image.pollinations.ai/prompt/{encoded_prompt}?seed={seed}",
+        "dalle-mini": f"https://pollinations.ai/p/{encoded_prompt}",
+        
+        # 백업 옵션들
+        "flux-basic": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&nologo=true&model=flux&seed={seed}",
+        "default": f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1200&height=630&enhance=true&seed={seed}",
     }
     
-    return services.get(service, services["flux-pro"])
+    return services.get(service, services["replicate"])
 
-def upload_image_to_wp(image_prompt, title, max_retries=3):
-    """🆕 개선: 이미지 업로드 (다중 서비스 + 재시도 로직)"""
-    print(f"🖼️ 이미지 생성 및 업로드 시작...")
+def create_fallback_image_html(topic):
+    """이미지 생성 실패 시 SVG 대체 이미지 생성"""
+    print("🎨 SVG 대체 이미지 생성 중...")
     
-    # 시도할 서비스 목록 (최고 퀄리티 순)
-    services = ["flux-pro", "flux", "flux-realism", "turbo", "pollinations"]
+    # 주제에서 핵심 키워드 추출
+    keywords = topic[:30] if len(topic) > 30 else topic
+    
+    svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grad1)"/>
+  <text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="48" font-weight="bold" font-family="Arial, sans-serif">
+    {keywords}
+  </text>
+  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="24" font-family="Arial, sans-serif">
+    PLUXEON 경제 블로그
+  </text>
+</svg>'''
+    
+    return svg_content
+
+def upload_image_to_wp(image_prompt, title, max_retries=2):
+    """🆕 개선: 이미지 업로드 (다중 서비스 + SVG 폴백)"""
+    print(f"🖼️ 이미지 생성 및 업로드 시작...")
+    print(f"📌 프롬프트: {image_prompt[:100]}...\n")
+    
+    # 시도할 서비스 목록
+    services = ["replicate", "pollinations-simple", "flux-basic", "default"]
     
     for service in services:
-        print(f"🎨 {service} 모델로 이미지 생성 시도...")
+        print(f"🎨 {service} 서비스로 이미지 생성 시도...")
         
         for attempt in range(max_retries):
             try:
                 # 이미지 URL 생성
                 image_url = generate_image_url(image_prompt, service)
-                print(f"📡 [{attempt+1}/{max_retries}] 다운로드 중... ({image_url[:80]}...)")
+                print(f"📡 [{attempt+1}/{max_retries}] 이미지 생성 중...")
                 
-                # 이미지 다운로드 (타임아웃 30초)
-                response = requests.get(image_url, timeout=30)
+                # User-Agent 추가로 차단 우회
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
                 
-                if response.status_code != 200:
-                    print(f"⚠️ 이미지 다운로드 실패 (상태코드: {response.status_code})")
+                img_response = requests.get(image_url, headers=headers, timeout=45)
+                
+                # 530 에러는 서비스 과부하 - 재시도 가치 있음
+                if img_response.status_code == 530:
+                    print(f"⚠️ 서비스 과부하 (HTTP 530) - 5초 후 재시도...")
+                    time.sleep(5)
+                    continue
+                elif img_response.status_code != 200:
+                    print(f"⚠️ 이미지 다운로드 실패 (HTTP {img_response.status_code})")
+                    time.sleep(3)
                     continue
                 
-                image_data = response.content
+                image_data = img_response.content
                 
-                # 이미지 크기 확인 (최소 10KB)
-                if len(image_data) < 10000:
+                # 이미지 크기 확인 (최소 5KB)
+                if len(image_data) < 5000:
                     print(f"⚠️ 이미지 크기가 너무 작음 ({len(image_data)} bytes)")
+                    time.sleep(3)
                     continue
                 
-                print(f"✅ 이미지 다운로드 완료 ({len(image_data)} bytes)")
+                print(f"✅ 이미지 다운로드 성공! ({len(image_data):,} bytes)")
                 
                 # WordPress 업로드
-                filename = f"fluxy_blog_{int(time.time())}.png"
+                filename = f"fluxy_{int(time.time())}.png"
                 credentials = f"{WP_USER}:{WP_APP_PASS}"
                 token = base64.b64encode(credentials.encode()).decode()
                 
-                headers = {
+                wp_headers = {
                     "Authorization": f"Basic {token}",
                     "Content-Disposition": f"attachment; filename={filename}",
                     "Content-Type": "image/png"
                 }
                 
                 media_url = WP_URL.replace("/posts", "/media")
-                print(f"📤 WordPress 업로드 중... ({media_url})")
+                print(f"📤 WordPress 업로드 시작...")
                 
                 wp_response = requests.post(
                     media_url, 
-                    headers=headers, 
+                    headers=wp_headers, 
                     data=image_data, 
                     verify=False, 
-                    timeout=30
+                    timeout=45
                 )
+                
+                print(f"📊 WordPress 응답 코드: {wp_response.status_code}")
                 
                 if wp_response.status_code == 201:
                     media_id = wp_response.json()['id']
                     media_link = wp_response.json().get('source_url', '링크 없음')
-                    print(f"🎉 업로드 성공! Media ID: {media_id}")
+                    print(f"🎉 업로드 성공!")
+                    print(f"🆔 Media ID: {media_id}")
                     print(f"🔗 이미지 URL: {media_link}\n")
                     return media_id
                 else:
-                    print(f"⚠️ WordPress 업로드 실패: {wp_response.status_code}")
-                    print(f"응답: {wp_response.text[:200]}")
+                    print(f"⚠️ WordPress 업로드 실패!")
+                    print(f"📄 응답 내용: {wp_response.text[:300]}")
+                    
+                    if wp_response.status_code == 401:
+                        print("❌ 인증 실패! WP_USER와 WP_APP_PASS를 확인하세요.")
+                    elif wp_response.status_code == 403:
+                        print("❌ 권한 부족! 앱 비밀번호에 미디어 업로드 권한이 있는지 확인하세요.")
+                    
+                    time.sleep(3)
                     
             except requests.Timeout:
-                print(f"⏱️ 타임아웃 발생 (시도 {attempt+1}/{max_retries})")
-                time.sleep(2)
+                print(f"⏱️ 타임아웃 발생 (45초 초과)")
+                time.sleep(3)
+            except requests.RequestException as e:
+                print(f"❌ 네트워크 에러: {e}")
+                time.sleep(3)
             except Exception as e:
-                print(f"❌ 에러 발생: {e}")
-                time.sleep(2)
+                print(f"❌ 예상치 못한 에러: {e}")
+                time.sleep(3)
         
-        print(f"⚠️ {service} 모델 실패, 다음 모델 시도...\n")
+        print(f"⚠️ {service} 서비스 모든 시도 실패\n")
     
-    print("❌ 모든 이미지 모델 실패. 이미지 없이 진행합니다.")
+    # 모든 시도 실패 시 SVG 폴백
+    print("🎨 모든 이미지 서비스 실패 - SVG 대체 이미지 생성 시도...")
+    try:
+        svg_content = create_fallback_image_html(title)
+        svg_bytes = svg_content.encode('utf-8')
+        
+        credentials = f"{WP_USER}:{WP_APP_PASS}"
+        token = base64.b64encode(credentials.encode()).decode()
+        
+        wp_headers = {
+            "Authorization": f"Basic {token}",
+            "Content-Disposition": f"attachment; filename=fluxy_{int(time.time())}.svg",
+            "Content-Type": "image/svg+xml"
+        }
+        
+        media_url = WP_URL.replace("/posts", "/media")
+        wp_response = requests.post(
+            media_url,
+            headers=wp_headers,
+            data=svg_bytes,
+            verify=False,
+            timeout=30
+        )
+        
+        if wp_response.status_code == 201:
+            media_id = wp_response.json()['id']
+            print(f"✅ SVG 이미지 업로드 성공! Media ID: {media_id}\n")
+            return media_id
+        else:
+            print(f"⚠️ SVG 업로드도 실패: {wp_response.status_code}")
+    except Exception as e:
+        print(f"❌ SVG 폴백 실패: {e}")
+    
+    print("💡 이미지 없이 글만 발행합니다.\n")
     return None
 
 def auto_posting():
